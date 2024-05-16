@@ -1,3 +1,46 @@
+## Task
+Your team has been tasked with building a server that initiates and maintains
+outbound phone calls. For example, it would be used in an application where
+
+users requested a call-back from their utility company, or implementing reach-
+out from a GP clinic for scheduling in patients who signed up for their flu jabs.
+
+As part of this server, you have been tasked with implementing the “call trigger”
+functionality. The server will expose an endpoint
+POST /trigger which clients can call to initiate an outbound call. The
+endpoint takes the following JSON payload:
+{
+"phone_number": "+44788888888",
+"virtual_agent_id": "TTFD_UDFNuhdeuhUHUwd"
+}
+This API will respond with a call id, which can then be used to check the status
+of the call. (This is
+out of scope — but just giving an idea of the usage patterns).
+
+To initiate the outbound calls we rely on a third-party API POST /originate_call
+that makes the phone call between the client and the virtual agent. If we make a
+valid request to this API, then it may return the following responses:
+
+* 200 OK - the call was initiated and successfully answered.
+* 429 Too Many Requests - the call was rejected by the API, as we’re being
+rate-limited by the API. It will not return a Retry-After header.
+The API rate limit is set at 25 API requests every 10 seconds.
+Hitting the rate limit will introduce a substantial backoff (e.g. 30s)
+The /originate_call API latency is not negligible. It can take up to 5-10s for a
+call to be established (think about how long it takes for a call to ring before
+pickup). We want our API wrapper to respond much faster than that.
+
+Your objective is to:
+
+* Implement the trigger route, together with tests. The signature of
+the function you’re expected to provide is essentially:
+function trigger(phone_number, virtual_agent_id) → call_id
+* Maximise call throughput while minimising the number of rate limit
+errors from the third-party API.
+* This API should respond instantly, it shouldn’t block and it should
+not return rate limiting errors. The status of the call will be queried
+through a different route (this other route is out of scope)
+
 ## Principles
 * Avoid third-party libs, if it doesn't consume too much time.
 * Error handling is kind of ignored(random messages).
